@@ -1,0 +1,1294 @@
+<!DOCTYPE html>
+<html lang="de" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rekonstruktion einer Größe & Bedeutung von Flächeninhalten (Analysis NRW)</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- KaTeX for crisp mathematical formulas -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: { 50: '#f0f9ff', 100: '#e0f2fe', 500: '#0284c7', 600: '#0369a1', 700: '#075985' },
+                        pos: { 500: '#10b981', 600: '#059669', 100: '#d1fae5' },
+                        neg: { 500: '#f43f5e', 600: '#e11d48', 100: '#ffe4e6' }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+        }
+        .dark .glass-panel {
+            background: rgba(15, 23, 42, 0.9);
+            border: 1px solid rgba(51, 65, 85, 0.8);
+        }
+        canvas { touch-action: none; }
+    </style>
+</head>
+<body class="bg-slate-100 dark:bg-slate-950 text-slate-800 dark:text-slate-100 min-h-full flex flex-col font-sans transition-colors duration-300">
+
+    <!-- Top Header -->
+    <header class="sticky top-0 z-50 bg-white/95 dark:bg-slate-900/95 border-b border-slate-200 dark:border-slate-800 shadow-sm backdrop-blur">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-600 to-indigo-600 flex items-center justify-center text-white shadow-md">
+                    <i class="fa-solid fa-chart-area"></i>
+                </div>
+                <div>
+                    <div class="flex items-center space-x-2">
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-sky-100 dark:bg-sky-950 text-sky-700 dark:text-sky-300">Oberstufe NRW</span>
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300">Analysis • Integralrechnung</span>
+                    </div>
+                    <h1 class="text-base sm:text-lg font-bold text-slate-900 dark:text-white leading-none mt-0.5">Rekonstruktion einer Größe & Flächeninhalte</h1>
+                </div>
+            </div>
+            
+            <div class="flex items-center space-x-2 sm:space-x-4">
+                <button onclick="toggleTheme()" class="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 transition">
+                    <i id="theme-icon" class="fa-solid fa-moon"></i>
+                </button>
+                <button onclick="openModal('didaktik-modal')" class="px-3 py-1.5 rounded-lg bg-sky-50 dark:bg-sky-950 text-sky-700 dark:text-sky-300 text-xs font-semibold border border-sky-200 dark:border-sky-800 hover:bg-sky-100 transition flex items-center space-x-1">
+                    <i class="fa-solid fa-graduation-cap"></i>
+                    <span class="hidden sm:inline">Lehrplan & Ziel</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <div class="bg-slate-50 dark:bg-slate-900/80 border-t border-slate-200 dark:border-slate-800 overflow-x-auto">
+            <div class="max-w-7xl mx-auto px-4 flex space-x-1 py-1.5 text-xs font-medium">
+                <button onclick="switchTab('station1')" id="nav-station1" class="nav-tab px-4 py-2 rounded-lg transition-all flex items-center space-x-2 active">
+                    <i class="fa-solid fa-puzzle-piece"></i>
+                    <span>Station 1: Kontext & Einheiten</span>
+                </button>
+                <button onclick="switchTab('station2')" id="nav-station2" class="nav-tab px-4 py-2 rounded-lg transition-all flex items-center space-x-2">
+                    <i class="fa-solid fa-elevator text-emerald-500"></i>
+                    <span>Station 2: Orientierte Flächen (Tank & Aufzug)</span>
+                </button>
+                <button onclick="switchTab('station3')" id="nav-station3" class="nav-tab px-4 py-2 rounded-lg transition-all flex items-center space-x-2">
+                    <i class="fa-solid fa-battery-half text-amber-500"></i>
+                    <span>Station 3: Kugel & Smartphone-Akku</span>
+                </button>
+                <button onclick="switchTab('station4')" id="nav-station4" class="nav-tab px-4 py-2 rounded-lg transition-all flex items-center space-x-2">
+                    <i class="fa-solid fa-book-bookmark text-amber-500"></i>
+                    <span>Station 4: Merkkasten & Quiz</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+        <!-- ==================== STATION 1 ==================== -->
+        <section id="station1" class="tab-content space-y-6">
+            <!-- Zuordnungsaufgabe -->
+            <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                <div class="flex flex-col md:flex-row justify-between md:items-center gap-4 mb-6 pb-4 border-b border-slate-200 dark:border-slate-800">
+                    <div>
+                        <span class="text-xs font-bold uppercase tracking-wider text-sky-600">Auftrag 1 из Buchseite 52</span>
+                        <h2 class="text-xl font-bold text-slate-900 dark:text-white">Bedeutung von Flächeninhalten (Kontext-Zuordnung)</h2>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                            Ordne den 6 Realsituationen (1–6) den passenden Graphen (A–F) und das berechnete Gesamtergebnis zu.
+                        </p>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <button onclick="resetPuzzle()" class="px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-xs font-semibold hover:bg-slate-200">
+                            <i class="fa-solid fa-rotate-right mr-1"></i>Zurücksetzen
+                        </button>
+                        <button onclick="checkPuzzle()" class="px-4 py-1.5 rounded-lg bg-sky-600 text-white text-xs font-semibold hover:bg-sky-500 shadow-sm">
+                            <i class="fa-solid fa-check mr-1"></i>Zuordnung prüfen
+                        </button>
+                    </div>
+                </div>
+
+                <div id="puzzle-score-banner" class="hidden mb-4 p-3 rounded-xl text-xs font-semibold flex items-center justify-between"></div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="puzzle-cards-container">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+
+            <!-- Interaktiver Auftrag 2: Plausibilitäts- & Überschlags-Inspector -->
+            <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+                <div class="border-b border-slate-200 dark:border-slate-800 pb-3 flex justify-between items-center flex-wrap gap-2">
+                    <div>
+                        <span class="text-xs font-bold uppercase tracking-wider text-emerald-600">Auftrag 2 Interaktiv</span>
+                        <h3 class="text-lg font-bold text-slate-900 dark:text-white">Plausibilitätsprüfung durch zweidimensionale Ersatzfiguren</h3>
+                        <p class="text-xs text-slate-500">Lege ein Näherungs-Rechteck oder -Trapez über den Graphen, berechne die Fläche und vergleiche mit dem Zielwert.</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                    <div class="lg:col-span-5 space-y-3">
+                        <label class="text-xs font-bold text-slate-700 dark:text-slate-300 block">Wähle eine Situation zum Überprüfen:</label>
+                        <select id="plausibility-select" onchange="updatePlausibilityInspector()" class="w-full text-xs font-semibold p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100">
+                            <option value="5">5. Auto auf Autobahn (Ziel: ca. 57,5 km)</option>
+                            <option value="1">1. Handballspiel Zuschauer (Ziel: ca. 9750 Personen)</option>
+                            <option value="2">2. Kraft auf Auto (Ziel: ca. 47 Nm)</option>
+                            <option value="3">3. Wasserleitung (Ziel: ca. 251 m³)</option>
+                            <option value="4">4. Fluss-Abflussmenge (Ziel: ca. 950 m³)</option>
+                            <option value="6">6. Kraftwerk-Kamin Schadstoff (Ziel: ca. 1110 g)</option>
+                        </select>
+
+                        <div class="p-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-3 text-xs">
+                            <div class="font-bold text-slate-800 dark:text-slate-200" id="plaus-title">Ersatzfigur-Berechnung</div>
+                            
+                            <div class="space-y-2">
+                                <div>
+                                    <label class="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase block">Geschätzte mittlere Höhe (y-Wert)</label>
+                                    <input type="number" id="plaus-height-input" step="any" oninput="calculateUserPlausibility()" placeholder="z.B. 115" class="w-full p-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs font-mono">
+                                </div>
+                                <div>
+                                    <label class="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase block">Breite / Dauer (x-Intervall)</label>
+                                    <input type="number" id="plaus-width-input" step="any" oninput="calculateUserPlausibility()" placeholder="z.B. 0.5" class="w-full p-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs font-mono">
+                                </div>
+                            </div>
+
+                            <div class="pt-2 border-t border-slate-200 dark:border-slate-800 flex justify-between items-center">
+                                <span class="text-slate-500 dark:text-slate-400">Berechnete Fläche:</span>
+                                <span id="plaus-user-result" class="font-mono font-bold text-sm text-sky-600 dark:text-sky-400">--</span>
+                            </div>
+                            <div id="plaus-feedback" class="p-2.5 rounded-lg text-[11px] font-semibold hidden"></div>
+                        </div>
+                    </div>
+
+                    <div class="lg:col-span-7 bg-slate-50 dark:bg-slate-950 p-4 rounded-xl border border-slate-200 dark:border-slate-800 space-y-2">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-xs font-bold text-slate-600 dark:text-slate-300">Grafische Überlagerung der Ersatzfigur</span>
+                            <span id="plaus-target-badge" class="font-mono text-xs font-bold px-2.5 py-1 rounded bg-sky-100 dark:bg-sky-950 text-sky-700 dark:text-sky-300">Ziel: 57,5 km</span>
+                        </div>
+                        <div class="w-full h-72 relative bg-white dark:bg-slate-900 rounded-lg p-2 border border-slate-200 dark:border-slate-800 flex items-center justify-center">
+                            <canvas id="plausibilityChart" class="w-full h-full"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Interaktiver Auftrag 3: Einheiten-Multiplikator & Kürzungs-Labor -->
+            <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+                <div class="border-b border-slate-200 dark:border-slate-800 pb-3">
+                    <span class="text-xs font-bold uppercase tracking-wider text-sky-600">Auftrag 3 Interaktiv</span>
+                    <h3 class="text-lg font-bold text-slate-900 dark:text-white">Einheiten-Multiplikator & Kürzungs-Labor</h3>
+                    <p class="text-xs text-slate-500">Wähle y- und x-Einheiten und beobachte, wie sich der Bruchausdruck zur physikalischen Rekonstruktionsgröße vereinfacht.</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                    <div class="p-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-2">
+                        <label class="font-bold text-slate-700 dark:text-slate-300 block">1. Einheit y-Achse (Änderungsrate)</label>
+                        <select id="mult-y-select" onchange="runUnitMultiplier()" class="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 font-semibold">
+                            <option value="m3_h">m³ / h (Volumenstrom)</option>
+                            <option value="m3_min">m³ / min (Durchfluss)</option>
+                            <option value="km_h">km / h (Geschwindigkeit)</option>
+                            <option value="m_s">m / s (Geschwindigkeit)</option>
+                            <option value="pers_min">Personen / min (Einlassrate)</option>
+                            <option value="g_min">g / min (Schadstoffausstoß)</option>
+                            <option value="N">N (Kraft)</option>
+                        </select>
+                    </div>
+
+                    <div class="p-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-2">
+                        <label class="font-bold text-slate-700 dark:text-slate-300 block">2. Einheit x-Achse (Zeit / Weg)</label>
+                        <select id="mult-x-select" onchange="runUnitMultiplier()" class="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 font-semibold">
+                            <option value="h">h (Stunden)</option>
+                            <option value="min">min (Minuten)</option>
+                            <option value="s">s (Sekunden)</option>
+                            <option value="m">m (Meter)</option>
+                        </select>
+                    </div>
+
+                    <div class="p-4 rounded-xl bg-gradient-to-br from-sky-900 to-slate-900 text-white space-y-2 flex flex-col justify-center text-center shadow-md">
+                        <span class="text-[10px] text-sky-300 uppercase font-bold tracking-wider">Ergebnis-Einheit der Rekonstruktion</span>
+                        <div id="mult-result-display" class="text-lg font-mono font-bold text-amber-400 py-1"></div>
+                        <span id="mult-type-badge" class="text-[11px] font-medium text-slate-300"></span>
+                    </div>
+                </div>
+
+                <div class="p-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-center space-y-2">
+                    <span class="text-xs text-slate-400 block font-bold">Animierte Einheitenkürzung:</span>
+                    <div id="mult-formula-step" class="font-mono text-base font-bold text-sky-600 dark:text-sky-400"></div>
+                    <p id="mult-detail-text" class="text-xs text-slate-600 dark:text-slate-400 max-w-2xl mx-auto italic"></p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== STATION 2 ==================== -->
+        <section id="station2" class="tab-content hidden space-y-6">
+            <!-- Wassertank-Modell -->
+            <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                <div class="flex flex-col md:flex-row justify-between md:items-center gap-4 mb-4 pb-4 border-b border-slate-200 dark:border-slate-800">
+                    <div>
+                        <span class="text-xs font-bold uppercase tracking-wider text-emerald-600">Modell 1 aus Buchseite 53</span>
+                        <h2 class="text-xl font-bold text-slate-900 dark:text-white">Wassertank: Zufluss, Abfluss & Anfangsbestand</h2>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Anfangsbestand: $15\,\text{l}$. Positiver Zufluss vs. negativer Abfluss.</p>
+                    </div>
+
+                    <!-- Explicit Control Panel -->
+                    <div class="flex items-center space-x-2 bg-slate-100 dark:bg-slate-800 p-1.5 rounded-xl">
+                        <button onclick="playTankAnim()" class="px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-500 shadow-sm flex items-center space-x-1">
+                            <i id="tank-play-icon" class="fa-solid fa-play"></i>
+                            <span id="tank-play-text">Simulation starten</span>
+                        </button>
+                        <button onclick="resetTankAnim()" class="px-3 py-1.5 rounded-lg bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 text-xs font-semibold hover:bg-slate-200 border border-slate-200 dark:border-slate-700">
+                            <i class="fa-solid fa-rotate-left"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+                    <div class="lg:col-span-7 bg-slate-50 dark:bg-slate-950 p-4 rounded-xl border border-slate-200 dark:border-slate-800">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-xs font-bold text-slate-600 dark:text-slate-300">Graphendarstellung Durchflussrate $f(t)$ ($\text{l/min}$)</span>
+                            <span id="tank-time-badge" class="font-mono text-xs font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800">t = 0 min</span>
+                        </div>
+                        <div class="h-64 relative">
+                            <canvas id="tankChart"></canvas>
+                        </div>
+                        <div class="mt-3">
+                            <input type="range" id="tank-slider" min="0" max="7" step="0.1" value="0" oninput="updateTankSimulation(parseFloat(this.value))" class="w-full accent-emerald-600">
+                        </div>
+                    </div>
+
+                    <div class="lg:col-span-5 space-y-4">
+                        <div class="bg-slate-50 dark:bg-slate-950 p-4 rounded-xl border border-slate-200 dark:border-slate-800 flex items-center justify-around">
+                            <div class="relative w-24 h-48 bg-slate-200 dark:bg-slate-800 rounded-b-2xl border-4 border-t-0 border-slate-400 dark:border-slate-600 overflow-hidden flex flex-col justify-end">
+                                <div id="tank-water" class="w-full bg-sky-500/80 transition-all duration-75 relative flex items-center justify-center text-white font-bold text-xs shadow-inner" style="height: 45%;">
+                                    <span id="tank-water-label" class="drop-shadow">15,0 l</span>
+                                </div>
+                            </div>
+                            <div class="space-y-2 text-xs">
+                                <div class="p-2 rounded bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                                    <span class="text-slate-400">Anfangsbestand:</span>
+                                    <span class="font-bold block text-slate-800 dark:text-slate-200">$15{,}0\,\text{l}$</span>
+                                </div>
+                                <div class="p-2 rounded bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                                    <span class="text-slate-400">Orientierte Fläche:</span>
+                                    <span id="tank-integral-val" class="font-bold block text-emerald-600">$+0{,}0\,\text{l}$</span>
+                                </div>
+                                <div class="p-2 rounded bg-emerald-50 dark:bg-emerald-950 border border-emerald-300 dark:border-emerald-800">
+                                    <span class="text-emerald-800 dark:text-emerald-300 font-bold">Aktueller Bestand:</span>
+                                    <span id="tank-total-val" class="font-bold block text-sm text-emerald-700 dark:text-emerald-200">$15{,}0\,\text{l}$</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="overflow-x-auto text-[11px]">
+                            <table class="w-full border-collapse border border-slate-200 dark:border-slate-800 text-left">
+                                <thead>
+                                    <tr class="bg-slate-100 dark:bg-slate-800">
+                                        <th class="p-1.5 border border-slate-200 dark:border-slate-700">Intervall</th>
+                                        <th class="p-1.5 border border-slate-200 dark:border-slate-700">Rate</th>
+                                        <th class="p-1.5 border border-slate-200 dark:border-slate-700">Geometrie</th>
+                                        <th class="p-1.5 border border-slate-200 dark:border-slate-700">Bestand</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-900">
+                                        <td class="p-1.5 border border-slate-200 dark:border-slate-700 font-mono">[0; 3]</td>
+                                        <td class="p-1.5 border border-slate-200 dark:border-slate-700 text-emerald-600 font-bold">positiv</td>
+                                        <td class="p-1.5 border border-slate-200 dark:border-slate-700">$A_1 = +6\,\text{l}$ oberhalb</td>
+                                        <td class="p-1.5 border border-slate-200 dark:border-slate-700 font-mono">15 + 6 = 21 l</td>
+                                    </tr>
+                                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-900">
+                                        <td class="p-1.5 border border-slate-200 dark:border-slate-700 font-mono">[3; 5]</td>
+                                        <td class="p-1.5 border border-slate-200 dark:border-slate-700 text-emerald-600 font-bold">positiv</td>
+                                        <td class="p-1.5 border border-slate-200 dark:border-slate-700">$A_2 = +2\,\text{l}$ oberhalb</td>
+                                        <td class="p-1.5 border border-slate-200 dark:border-slate-700 font-mono">21 + 2 = 23 l</td>
+                                    </tr>
+                                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-900">
+                                        <td class="p-1.5 border border-slate-200 dark:border-slate-700 font-mono">[5; 7]</td>
+                                        <td class="p-1.5 border border-slate-200 dark:border-slate-700 text-rose-600 font-bold">negativ</td>
+                                        <td class="p-1.5 border border-slate-200 dark:border-slate-700">$A_3 = -3\,\text{l}$ unterhalb</td>
+                                        <td class="p-1.5 border border-slate-200 dark:border-slate-700 font-mono font-bold text-sky-600">23 - 3 = 20 l</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Aufzug-Modell -->
+            <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                <div class="flex flex-col md:flex-row justify-between md:items-center gap-4 mb-4 pb-4 border-b border-slate-200 dark:border-slate-800">
+                    <div>
+                        <span class="text-xs font-bold uppercase tracking-wider text-sky-600">Einstiegsbeispiel Hochhaus-Aufzug</span>
+                        <h2 class="text-xl font-bold text-slate-900 dark:text-white">Aufzugfahrt: Geschwindigkeit $v(t)$ & Höhengewinn</h2>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Geschwindigkeit $v > 0$: Aufwärtsfahrt; $v < 0$: Abwärtsfahrt.</p>
+                    </div>
+
+                    <!-- Explicit Control Panel -->
+                    <div class="flex items-center space-x-2 bg-slate-100 dark:bg-slate-800 p-1.5 rounded-xl">
+                        <button onclick="playElevatorAnim()" class="px-3 py-1.5 rounded-lg bg-sky-600 text-white text-xs font-semibold hover:bg-sky-500 shadow-sm flex items-center space-x-1">
+                            <i id="elev-play-icon" class="fa-solid fa-play"></i>
+                            <span id="elev-play-text">Simulation starten</span>
+                        </button>
+                        <button onclick="resetElevatorAnim()" class="px-3 py-1.5 rounded-lg bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 text-xs font-semibold hover:bg-slate-200 border border-slate-200 dark:border-slate-700">
+                            <i class="fa-solid fa-rotate-left"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+                    <div class="lg:col-span-8 bg-slate-50 dark:bg-slate-950 p-4 rounded-xl border border-slate-200 dark:border-slate-800">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-xs font-bold text-slate-600 dark:text-slate-300">Geschwindigkeits-Zeit-Diagramm $v(t)$ (in m/s)</span>
+                            <span id="elevator-time-badge" class="font-mono text-xs font-bold px-2 py-0.5 rounded bg-sky-100 text-sky-800">t = 0 s</span>
+                        </div>
+                        <div class="h-64 relative">
+                            <canvas id="elevatorChart"></canvas>
+                        </div>
+                        <div class="mt-3">
+                            <input type="range" id="elevator-slider" min="0" max="26" step="0.1" value="0" oninput="updateElevatorSimulation(parseFloat(this.value))" class="w-full accent-sky-600">
+                        </div>
+                    </div>
+
+                    <div class="lg:col-span-4 bg-slate-50 dark:bg-slate-950 p-4 rounded-xl border border-slate-200 dark:border-slate-800 flex items-center justify-around">
+                        <div class="relative w-20 h-64 bg-slate-200 dark:bg-slate-800 rounded-lg border-2 border-slate-400 dark:border-slate-600 flex flex-col justify-end p-1">
+                            <div class="absolute inset-x-0 top-2 border-b border-dashed border-slate-400/50 text-[9px] text-slate-400 pl-1">OG 8 (30m)</div>
+                            <div class="absolute inset-x-0 top-1/2 border-b border-dashed border-slate-400/50 text-[9px] text-slate-400 pl-1">OG 4 (15m)</div>
+                            <div class="absolute inset-x-0 bottom-2 border-b border-dashed border-slate-400/50 text-[9px] text-slate-400 pl-1">EG (0m)</div>
+
+                            <div id="elevator-cabin" class="w-full h-10 bg-indigo-600 rounded flex flex-col items-center justify-center text-white font-bold text-[10px] shadow-lg transition-all duration-75 relative">
+                                <i class="fa-solid fa-elevator text-xs"></i>
+                                <span id="elevator-height-label">0.0 m</span>
+                            </div>
+                        </div>
+
+                        <div class="space-y-3 text-xs">
+                            <div class="p-2.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                                <span class="text-slate-400 block">Momentane Geschw.:</span>
+                                <span id="elev-speed-val" class="font-mono font-bold text-sm text-sky-600">0,0 m/s</span>
+                            </div>
+                            <div class="p-2.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                                <span class="text-slate-400 block">Höhendifferenz ($\int v \, dt$):</span>
+                                <span id="elev-pos-val" class="font-mono font-bold text-sm text-emerald-600">+0,0 m</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== STATION 3 ==================== -->
+        <section id="station3" class="tab-content hidden space-y-6">
+            <!-- Beispiel 1: Kugelbewegung -->
+            <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                <div class="flex flex-col md:flex-row justify-between md:items-center gap-4 mb-4 pb-4 border-b border-slate-200 dark:border-slate-800">
+                    <div>
+                        <span class="text-xs font-bold uppercase tracking-wider text-sky-600">Beispiel 1 aus Buchseite 54</span>
+                        <h2 class="text-xl font-bold text-slate-900 dark:text-white">Zurückgelegte Strecke einer Kugel (1D-Bewegung)</h2>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                            Rechtsbewegung ($v>0$), Linksbewegung ($v<0$). Skalierung: $1\,\text{FE} = 1\,\frac{\text{cm}}{\text{s}} \cdot 1\,\text{s} = 1\,\text{cm}$.
+                        </p>
+                    </div>
+
+                    <!-- Explicit Control Panel -->
+                    <div class="flex items-center space-x-2 bg-slate-100 dark:bg-slate-800 p-1.5 rounded-xl">
+                        <button onclick="playBallAnim()" class="px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-500 shadow-sm flex items-center space-x-1">
+                            <i id="ball-play-icon" class="fa-solid fa-play"></i>
+                            <span id="ball-play-text">Simulation starten</span>
+                        </button>
+                        <button onclick="resetBallAnim()" class="px-3 py-1.5 rounded-lg bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 text-xs font-semibold hover:bg-slate-200 border border-slate-200 dark:border-slate-700">
+                            <i class="fa-solid fa-rotate-left"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+                    <div class="lg:col-span-7 bg-slate-50 dark:bg-slate-950 p-4 rounded-xl border border-slate-200 dark:border-slate-800">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-xs font-bold text-slate-600 dark:text-slate-300">$v(t)$-Graph mit Teilflächen $A_1, A_2, A_3, A_4$</span>
+                            <span id="ball-time-badge" class="font-mono text-xs font-bold px-2 py-0.5 rounded bg-sky-100 text-sky-800">t = 0 s</span>
+                        </div>
+                        <div class="h-60 relative">
+                            <canvas id="ballChart"></canvas>
+                        </div>
+                        <div class="mt-3">
+                            <input type="range" id="ball-slider" min="0" max="5" step="0.05" value="0" oninput="updateBallSimulation(parseFloat(this.value))" class="w-full accent-sky-600">
+                        </div>
+                    </div>
+
+                    <div class="lg:col-span-5 space-y-4">
+                        <div class="bg-slate-50 dark:bg-slate-950 p-4 rounded-xl border border-slate-200 dark:border-slate-800">
+                            <span class="text-xs font-bold text-slate-600 dark:text-slate-300 block mb-2">Physikalische Schienen-Simulation ($x$-Position)</span>
+                            
+                            <div class="relative w-full h-16 bg-slate-200 dark:bg-slate-800 rounded-xl border border-slate-300 dark:border-slate-700 flex items-center px-4 overflow-hidden">
+                                <div class="absolute left-1/2 top-0 bottom-0 w-0.5 bg-slate-400 dark:bg-slate-500 z-0"></div>
+                                <span class="absolute left-1/2 -top-5 -translate-x-1/2 text-[10px] font-mono text-slate-400">Start (0 cm)</span>
+                                
+                                <div id="rolling-ball" class="w-8 h-8 rounded-full bg-gradient-to-r from-rose-500 to-amber-500 shadow-md relative z-10 transition-all duration-75 flex items-center justify-center text-white text-[10px] font-bold" style="transform: translateX(0px);">
+                                    <i class="fa-solid fa-circle"></i>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-2 mt-4 text-xs">
+                                <div class="p-2 rounded bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                                    <span class="text-slate-400">Geschwindigkeit:</span>
+                                    <span id="ball-speed-val" class="font-mono font-bold block text-slate-800 dark:text-slate-200">0,0 cm/s</span>
+                                </div>
+                                <div class="p-2 rounded bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                                    <span class="text-slate-400">Position rel. zum Start:</span>
+                                    <span id="ball-pos-val" class="font-mono font-bold block text-indigo-600">0,0 cm</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="p-3 bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800 text-xs space-y-1">
+                            <div class="font-bold text-slate-800 dark:text-slate-200">Flächenbilanz bei $t = 5\,\text{s}$:</div>
+                            <p class="font-mono text-slate-600 dark:text-slate-400">
+                                $-A_1 - A_2 + A_3 + A_4 = -4 - 1 + 1 + 2 = -2\,\text{FE}$
+                            </p>
+                            <p class="text-emerald-600 dark:text-emerald-400 font-bold">
+                                Ergebnis: Die Kugel befindet sich $2\,\text{cm}$ links vom Start.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Beispiel 2: Chemiefabrik (Exakt nach Buchseite 54) -->
+            <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                <div class="flex flex-col md:flex-row justify-between md:items-center gap-4 mb-4 pb-4 border-b border-slate-200 dark:border-slate-800">
+                    <div>
+                        <span class="text-xs font-bold uppercase tracking-wider text-teal-600">Beispiel 2 aus Buchseite 54</span>
+                        <h2 class="text-xl font-bold text-slate-900 dark:text-white">Chemiefabrik: Volumen anhand von Zufluss- und Abflussraten</h2>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                            Ein Kästchen entspricht $1\,\text{h} \cdot 0{,}5\,\frac{\text{m}^3}{\text{h}} = 0{,}5\,\text{m}^3$. Zuflussrate $z(t)$ (rot) und Abflussrate $a(t)$ (blau, ab $6\,\text{h}$ konstant $2{,}5\,\frac{\text{m}^3}{\text{h}}$).
+                        </p>
+                    </div>
+
+                    <!-- Explicit Control Panel -->
+                    <div class="flex items-center space-x-2 bg-slate-100 dark:bg-slate-800 p-1.5 rounded-xl">
+                        <button onclick="playChemAnim()" class="px-3 py-1.5 rounded-lg bg-teal-600 text-white text-xs font-semibold hover:bg-teal-500 shadow-sm flex items-center space-x-1">
+                            <i id="chem-play-icon" class="fa-solid fa-play"></i>
+                            <span id="chem-play-text">Simulation starten</span>
+                        </button>
+                        <button onclick="resetChemAnim()" class="px-3 py-1.5 rounded-lg bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 text-xs font-semibold hover:bg-slate-200 border border-slate-200 dark:border-slate-700">
+                            <i class="fa-solid fa-rotate-left"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Interaktive Phasen nach Buchvorlage -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4 text-xs">
+                    <button onclick="jumpChemPhase(0)" class="p-3 rounded-xl bg-teal-50 dark:bg-teal-950/50 border border-teal-200 dark:border-teal-900 text-left hover:border-teal-400 transition">
+                        <div class="font-bold text-teal-700 dark:text-teal-400 flex items-center justify-between">
+                            <span>0 bis 6 Stunden ($A_1$)</span>
+                            <span class="text-[10px] bg-teal-200 dark:bg-teal-900 text-teal-800 dark:text-teal-200 px-1.5 py-0.5 rounded font-mono">4,5 m³ im Tank</span>
+                        </div>
+                        <p class="text-[11px] text-slate-600 dark:text-slate-300 mt-1">
+                            $A_1 = 9\text{ Kästchen} \cdot 0{,}5\,\text{m}^3 = 4{,}5\,\text{m}^3$. Nur Zufluss aktiv. Nach 6 Stunden sind $4{,}5\,\text{m}^3$ im Tank.
+                        </p>
+                    </button>
+
+                    <button onclick="jumpChemPhase(6)" class="p-3 rounded-xl bg-sky-50 dark:bg-sky-950/50 border border-sky-200 dark:border-sky-900 text-left hover:border-sky-400 transition">
+                        <div class="font-bold text-sky-700 dark:text-sky-400 flex items-center justify-between">
+                            <span>6 bis 10 Stunden ($A_2$)</span>
+                            <span class="text-[10px] bg-sky-200 dark:bg-sky-900 text-sky-800 dark:text-sky-200 px-1.5 py-0.5 rounded font-mono">2,5 m³ im Tank</span>
+                        </div>
+                        <p class="text-[11px] text-slate-600 dark:text-slate-300 mt-1">
+                            $A_2 = 20 - 16 = 4\text{ Kästchen} \cdot 0{,}5\,\text{m}^3 = 2\,\text{m}^3$ Abfluss. Das Volumen sinkt von $4{,}5\,\text{m}^3$ auf $2{,}5\,\text{m}^3$.
+                        </p>
+                    </button>
+
+                    <button onclick="jumpChemPhase(10)" class="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-900 text-left hover:border-amber-400 transition">
+                        <div class="font-bold text-amber-700 dark:text-amber-400 flex items-center justify-between">
+                            <span>Ab 10 Stunden</span>
+                            <span class="text-[10px] bg-amber-200 dark:bg-amber-900 text-amber-800 dark:text-amber-200 px-1.5 py-0.5 rounded font-mono">Konstant 2,5 m³</span>
+                        </div>
+                        <p class="text-[11px] text-slate-600 dark:text-slate-300 mt-1">
+                            Zufluss- und Abflussrate sind gleich groß ($2{,}5\,\frac{\text{m}^3}{\text{h}}$). Die Menge im Tank bleibt konstant bei $2{,}5\,\text{m}^3$.
+                        </p>
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+                    <div class="lg:col-span-7 bg-slate-50 dark:bg-slate-950 p-4 rounded-xl border border-slate-200 dark:border-slate-800">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-xs font-bold text-slate-600 dark:text-slate-300">Volumenveränderung in $\text{m}^3/\text{h}$</span>
+                            <span id="chem-time-badge" class="font-mono text-xs font-bold px-2 py-0.5 rounded bg-teal-100 text-teal-800">t = 0 h</span>
+                        </div>
+                        <div class="h-64 relative">
+                            <canvas id="chemChart"></canvas>
+                        </div>
+                        <div class="mt-3">
+                            <input type="range" id="chem-slider" min="0" max="12" step="0.1" value="0" oninput="updateChemSimulation(parseFloat(this.value))" class="w-full accent-teal-600">
+                        </div>
+                    </div>
+
+                    <div class="lg:col-span-5 space-y-4">
+                        <div class="bg-slate-50 dark:bg-slate-950 p-4 rounded-xl border border-slate-200 dark:border-slate-800 flex items-center justify-around relative">
+                            
+                            <!-- Visual Tank Behälter -->
+                            <div class="flex flex-col items-center">
+                                <div class="relative w-28 h-52 bg-slate-200 dark:bg-slate-800 rounded-b-2xl border-4 border-t-0 border-slate-400 dark:border-slate-600 overflow-hidden flex flex-col justify-end shadow-inner">
+                                    <div id="chem-tank-liquid" class="w-full bg-teal-500/80 transition-all duration-75 relative flex items-center justify-center text-white font-bold text-xs" style="height: 0%;">
+                                        <span id="chem-tank-liquid-label" class="drop-shadow">0,0 m³</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="space-y-2 text-xs">
+                                <div class="p-2 rounded bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                                    <span class="text-slate-400 block">Zuflussrate $z(t)$:</span>
+                                    <span id="chem-rate-in" class="font-mono font-bold block text-teal-600 text-sm">0,0 m³/h</span>
+                                </div>
+                                <div class="p-2 rounded bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                                    <span class="text-slate-400 block">Abflussrate $a(t)$:</span>
+                                    <span id="chem-rate-out" class="font-mono font-bold block text-rose-600 text-sm">0,0 m³/h</span>
+                                </div>
+                                <div class="p-2 rounded bg-teal-50 dark:bg-teal-950 border border-teal-300 dark:border-teal-800">
+                                    <span class="text-teal-800 dark:text-teal-300 font-bold block">Volumen im Tank:</span>
+                                    <span id="chem-volume-val" class="font-mono font-bold block text-base text-teal-700 dark:text-teal-200">0,0 m³</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="p-3 bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800 text-xs space-y-1">
+                            <div class="font-bold text-slate-800 dark:text-slate-200">Kästchen-Prinzip ($1\,\text{Kästchen} = 0{,}5\,\text{m}^3$):</div>
+                            <p class="text-slate-600 dark:text-slate-400">
+                                Der Tank wird kontinuierlich gefüllt und ab $t=6\,\text{h}$ konstant entleert ($2{,}5\,\frac{\text{m}^3}{\text{h}}$).
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== STATION 4 ==================== -->
+        <section id="station4" class="tab-content hidden space-y-6">
+            <!-- Überarbeiteter Merkkasten nach Vorgabe -->
+            <div class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white p-6 sm:p-8 rounded-3xl shadow-xl space-y-6">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-400/30 flex items-center justify-center text-amber-400 text-lg">
+                        <i class="fa-solid fa-lightbulb"></i>
+                    </div>
+                    <h2 class="text-xl font-bold">Merkkasten: Rekonstruktion von Größen & Flächenberechnung</h2>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs leading-relaxed">
+                    <!-- Merkpunkt 1: Orientierter Flächeninhalt -->
+                    <div class="bg-white/10 backdrop-blur p-5 rounded-2xl border border-white/10 space-y-3">
+                        <div class="flex items-center space-x-2 text-emerald-400 font-bold text-sm">
+                            <i class="fa-solid fa-plus-minus"></i>
+                            <h3>1. Orientierter Flächeninhalt</h3>
+                        </div>
+                        <p class="text-slate-200">
+                            Ist der Graph einer momentanen Änderungsrate $f(t)$ gegeben, beschreibt die <strong>orientierte Fläche</strong> zwischen Graph und x-Achse die Gesamtänderung der physikalischen Sachgröße.
+                        </p>
+                        <ul class="space-y-1.5 text-slate-300 list-disc list-inside">
+                            <li>Flächen <strong>oberhalb</strong> der x-Achse ($f(t) > 0$) zählen <strong class="text-emerald-300">positiv</strong> (Zunahme, Zufluss, Rechtsbewegung).</li>
+                            <li>Flächen <strong>unterhalb</strong> der x-Achse ($f(t) < 0$) zählen <strong class="text-rose-300">negativ</strong> (Abnahme, Abfluss, Linksbewegung).</li>
+                        </ul>
+                        <div class="p-2.5 rounded-lg bg-black/30 font-mono text-[11px] text-amber-300 text-center">
+                            $$\text{Gesamtänderung} = \int_{t_1}^{t_2} f(t)\,\mathrm{d}t = A_{\text{oben}} - A_{\text{unten}}$$
+                        </div>
+                    </div>
+
+                    <!-- Merkpunkt 2: Zweidimensionale Flächenberechnung -->
+                    <div class="bg-white/10 backdrop-blur p-5 rounded-2xl border border-white/10 space-y-3">
+                        <div class="flex items-center space-x-2 text-sky-400 font-bold text-sm">
+                            <i class="fa-solid fa-shapes"></i>
+                            <h3>2. Zweidimensionale Flächenberechnung zwischen Graph & x-Achse</h3>
+                        </div>
+                        <p class="text-slate-200">
+                            Zur Bestimmung des orientierten Flächeninhalts wird die Fläche zwischen dem Graphen und der x-Achse mithilfe zweidimensionaler Geometrie zerlegt:
+                        </p>
+                        <ul class="space-y-1.5 text-slate-300 list-disc list-inside">
+                            <li><strong>Zerlegung in Grundfiguren:</strong> Aufteilung in Rechtecke ($A = a \cdot b$), Dreiecke ($A = \frac{1}{2}g \cdot h$) und Trapeze ($A = \frac{a+c}{2} \cdot h$).</li>
+                            <li><strong>Umrechnung Flächeneinheiten (FE):</strong> Jedes Kästchen entspricht $1\,\text{FE} = [\text{y-Einheit}] \cdot [\text{x-Einheit}]$.</li>
+                            <li><strong>Bestandsrechnung:</strong> $\text{Endbestand} = \text{Anfangsbestand} + \text{orientierter Flächeninhalt}$.</li>
+                        </ul>
+                        <div class="p-2.5 rounded-lg bg-black/30 font-mono text-[11px] text-sky-300 text-center">
+                            $$\text{Einheit} = [\text{y-Achse}] \cdot [\text{x-Achse}]$$
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quiz -->
+            <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-6">
+                <div class="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-800">
+                    <div>
+                        <h3 class="text-lg font-bold text-slate-900 dark:text-white">Interaktiver Wissenscheck (Verständnis-Test)</h3>
+                        <p class="text-xs text-slate-500">Testen Sie Ihr Wissen für die nächste Klausur oder das Abitur.</p>
+                    </div>
+                    <span id="quiz-score-badge" class="font-mono text-xs font-bold px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800">Score: 0 / 3</span>
+                </div>
+
+                <div class="space-y-6" id="quiz-container">
+                    <!-- Dynamic Quiz Questions -->
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Didaktik Modal -->
+    <div id="didaktik-modal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-xl w-full p-6 space-y-4 shadow-2xl">
+            <div class="flex justify-between items-center pb-3 border-b border-slate-200 dark:border-slate-800">
+                <h3 class="font-bold text-slate-900 dark:text-white">Didaktische Einordnung (Kernlehrplan NRW)</h3>
+                <button onclick="closeModal('didaktik-modal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="text-xs text-slate-600 dark:text-slate-300 space-y-2 leading-relaxed">
+                <p>Diese Webanwendung deckt das Kernkonzept der <strong>Rekonstruktion einer Größe aus ihrer momentanen Änderungsrate</strong> (Grundverständnis des Hauptsatzes der Differential- und Integralrechnung) ab.</p>
+                <ul class="list-disc list-inside space-y-1">
+                    <li>Inhaltliches Denken von Akkumulation (Flächen als Gesamtwirkung).</li>
+                    <li>Unterscheidung von orientiertem Flächeninhalt und absolutem Flächeninhalt.</li>
+                    <li>Einheitensynthese ($\text{Rate} \cdot \text{Zeit} = \text{Bestand}$).</li>
+                </ul>
+            </div>
+            <div class="pt-3 border-t border-slate-200 dark:border-slate-800 text-right">
+                <button onclick="closeModal('didaktik-modal')" class="px-4 py-2 bg-sky-600 text-white rounded-xl text-xs font-semibold">Schließen</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Script -->
+    <script>
+        const puzzleItems = [
+            { id: 1, text: "1. Handballspiel: Zuschauer 1,5 h vor Beginn eingelassen.", graph: "F", result: "ca. 9750 Personen", resId: "2" },
+            { id: 2, text: "2. Auto wird über 4 m mit sich verändernder Kraft angeschoben.", graph: "B", result: "ca. 47 Nm", resId: "4" },
+            { id: 3, text: "3. Messstelle Wasserleitung: Durchfließende Wassermenge.", graph: "E", result: "ca. 251 m³", resId: "3" },
+            { id: 4, text: "4. Abflussmenge eines Flusses an Messstelle gemessen.", graph: "C", result: "ca. 950 m³", resId: "1" },
+            { id: 5, text: "5. Auto fährt ca. 30 Minuten auf Autobahn.", graph: "D", result: "ca. 57,5 km", resId: "5" },
+            { id: 6, text: "6. Kamin Kraftwerk: Menge eines Schadstoffs in Abluft.", graph: "A", result: "ca. 1110 g", resId: "6" }
+        ];
+
+        // Global Chart and Animation Handles
+        let tankChart, elevatorChart, ballChart, chemChart, plausibilityChart;
+        let tankAnimInterval = null, elevAnimInterval = null, ballAnimInterval = null, chemAnimInterval = null;
+
+        window.onload = function() {
+            renderPuzzle();
+            renderMathInElement(document.body, {
+                delimiters: [
+                    {left: '$$', right: '$$', display: true},
+                    {left: '$', right: '$', display: false}
+                ]
+            });
+            initCharts();
+            renderQuiz();
+            runUnitMultiplier();
+            updatePlausibilityInspector();
+        };
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.nav-tab').forEach(btn => btn.classList.remove('active', 'bg-white', 'dark:bg-slate-800', 'text-sky-600', 'shadow-sm'));
+            
+            document.getElementById(tabId).classList.remove('hidden');
+            const activeNav = document.getElementById(`nav-${tabId}`);
+            activeNav.classList.add('active', 'bg-white', 'dark:bg-slate-800', 'text-sky-600', 'shadow-sm');
+
+            if(tabId === 'station1' && plausibilityChart) plausibilityChart.resize();
+            if(tabId === 'station2' && tankChart && elevatorChart) { tankChart.resize(); elevatorChart.resize(); }
+            if(tabId === 'station3' && ballChart && chemChart) { ballChart.resize(); chemChart.resize(); }
+        }
+
+        function toggleTheme() { document.documentElement.classList.toggle('dark'); }
+        function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
+        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+        // STATION 1: PUZZLE
+        function renderPuzzle() {
+            const container = document.getElementById('puzzle-cards-container');
+            container.innerHTML = '';
+            puzzleItems.forEach(item => {
+                const card = document.createElement('div');
+                card.className = "bg-slate-50 dark:bg-slate-950 p-4 rounded-xl border border-slate-200 dark:border-slate-800 space-y-3";
+                card.innerHTML = `
+                    <div class="text-xs font-semibold text-slate-800 dark:text-slate-200 leading-snug">${item.text}</div>
+                    <div class="grid grid-cols-2 gap-2 text-xs">
+                        <div>
+                            <label class="text-[10px] text-slate-400 font-bold uppercase block">Graph</label>
+                            <select id="puzzle-graph-${item.id}" class="w-full p-2 rounded-lg border bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-xs font-semibold">
+                                <option value="">Bitte wählen...</option>
+                                ${['A','B','C','D','E','F'].map(g => `<option value="${g}">Graph ${g}</option>`).join('')}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-[10px] text-slate-400 font-bold uppercase block">Ergebnis</label>
+                            <select id="puzzle-res-${item.id}" class="w-full p-2 rounded-lg border bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-xs font-semibold">
+                                <option value="">Bitte wählen...</option>
+                                ${[1,2,3,4,5,6].map(r => `<option value="${r}">Ergebnis ${r}</option>`).join('')}
+                            </select>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function checkPuzzle() {
+            let correct = 0;
+            puzzleItems.forEach(item => {
+                const g = document.getElementById(`puzzle-graph-${item.id}`).value;
+                const r = document.getElementById(`puzzle-res-${item.id}`).value;
+                if(g === item.graph && r === item.resId) correct++;
+            });
+
+            const banner = document.getElementById('puzzle-score-banner');
+            banner.classList.remove('hidden');
+            if(correct === 6) {
+                banner.className = "mb-4 p-3 rounded-xl text-xs font-semibold bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-200 border border-emerald-300";
+                banner.innerHTML = `<i class="fa-solid fa-circle-check mr-2"></i>Perfekt! Alle 6 Zuordnungen stimmen überein.`;
+            } else {
+                banner.className = "mb-4 p-3 rounded-xl text-xs font-semibold bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-200 border border-amber-300";
+                banner.innerHTML = `<i class="fa-solid fa-circle-exclamation mr-2"></i>${correct} von 6 Zuordnungen korrekt. Überprüfe noch einmal!`;
+            }
+        }
+
+        function resetPuzzle() {
+            puzzleItems.forEach(item => {
+                document.getElementById(`puzzle-graph-${item.id}`).value = '';
+                document.getElementById(`puzzle-res-${item.id}`).value = '';
+            });
+            document.getElementById('puzzle-score-banner').classList.add('hidden');
+        }
+
+        // STATION 1 AUFTRAG 2: PLAUSIBILITY INSPECTOR
+        const plausData = {
+            "5": { target: 57.5, unit: "km", label: "Autofahrt (Graph D)", defaultH: 115, defaultW: 0.5, xMin: 0, xMax: 0.6, yMin: 0, yMax: 160, graphPoints: [{x:0,y:100},{x:0.2,y:100},{x:0.27,y:140},{x:0.33,y:140},{x:0.4,y:120},{x:0.55,y:120}] },
+            "1": { target: 9750, unit: "Personen", label: "Handballspiel (Graph F)", defaultH: 130, defaultW: 75, xMin: 0, xMax: 100, yMin: 0, yMax: 200, graphPoints: [{x:0,y:0},{x:20,y:125},{x:70,y:150},{x:90,y:0}] },
+            "2": { target: 47, unit: "Nm", label: "Kraft auf Auto (Graph B)", defaultH: 15, defaultW: 3.1, xMin: 0, xMax: 5.5, yMin: 0, yMax: 40, graphPoints: [{x:0,y:0},{x:1.5,y:20},{x:2.5,y:20},{x:5,y:0}] },
+            "3": { target: 251, unit: "m³", label: "Wasserleitung (Graph C)", defaultH: 23, defaultW: 10, xMin: 0, xMax: 50, yMin: 0, yMax: 40, graphPoints: [{x:0,y:20},{x:10,y:23},{x:20,y:27},{x:30,y:24},{x:40,y:18}] },
+            "4": { target: 950, unit: "m³", label: "Fluss-Abfluss (Graph E)", defaultH: 45, defaultW: 21, xMin: 14, xMax: 23, yMin: 0, yMax: 80, graphPoints: [{x:14,y:30},{x:16,y:30},{x:18,y:60},{x:19.5,y:40}] },
+            "6": { target: 1110, unit: "g", label: "Kamin-Schadstoff (Graph A)", defaultH: 26, defaultW: 43, xMin: 0, xMax: 55, yMin: 0, yMax: 40, graphPoints: [{x:0,y:0},{x:10,y:30},{x:40,y:30},{x:52,y:0}] }
+        };
+
+        function updatePlausibilityInspector() {
+            const key = document.getElementById('plausibility-select').value;
+            const item = plausData[key];
+            
+            document.getElementById('plaus-target-badge').textContent = `Zielwert: ca. ${item.target} ${item.unit}`;
+            document.getElementById('plaus-title').textContent = `Ersatzfigur: ${item.label}`;
+            document.getElementById('plaus-height-input').value = item.defaultH;
+            document.getElementById('plaus-width-input').value = item.defaultW;
+
+            if (plausibilityChart) {
+                plausibilityChart.options.scales.x.min = item.xMin;
+                plausibilityChart.options.scales.x.max = item.xMax;
+                plausibilityChart.options.scales.y.min = item.yMin;
+                plausibilityChart.options.scales.y.max = item.yMax;
+
+                plausibilityChart.data.datasets[0].data = item.graphPoints;
+                const firstX = item.graphPoints[0].x;
+                const lastX = firstX + item.defaultW;
+                plausibilityChart.data.datasets[1].data = [
+                    {x: firstX, y: 0},
+                    {x: firstX, y: item.defaultH},
+                    {x: lastX, y: item.defaultH},
+                    {x: lastX, y: 0}
+                ];
+                plausibilityChart.update();
+            }
+
+            calculateUserPlausibility();
+        }
+
+        function calculateUserPlausibility() {
+            const key = document.getElementById('plausibility-select').value;
+            const item = plausData[key];
+            const h = parseFloat(document.getElementById('plaus-height-input').value) || 0;
+            const w = parseFloat(document.getElementById('plaus-width-input').value) || 0;
+            const userArea = h * w;
+
+            document.getElementById('plaus-user-result').textContent = `${userArea.toLocaleString('de-DE', {maximumFractionDigits: 1})} ${item.unit}`;
+            
+            if (plausibilityChart && plausibilityChart.data.datasets[1]) {
+                const firstX = item.graphPoints[0].x;
+                const lastX = firstX + w;
+                plausibilityChart.data.datasets[1].data = [
+                    {x: firstX, y: 0},
+                    {x: firstX, y: h},
+                    {x: lastX, y: h},
+                    {x: lastX, y: 0}
+                ];
+                plausibilityChart.update();
+            }
+
+            const fb = document.getElementById('plaus-feedback');
+            fb.classList.remove('hidden');
+            const dev = Math.abs(userArea - item.target) / item.target;
+            if (dev < 0.15) {
+                fb.className = "p-2.5 rounded-lg text-[11px] font-semibold bg-emerald-100 text-emerald-900 dark:bg-emerald-950 dark:text-emerald-200 border border-emerald-300 dark:border-emerald-800";
+                fb.innerHTML = `<i class="fa-solid fa-check-circle mr-1 text-emerald-600"></i>Sehr gute Abschätzung! Deine Fläche (${userArea.toLocaleString('de-DE', {maximumFractionDigits: 1})}) weicht nur ${(dev*100).toFixed(1)}% vom Zielwert ab.`;
+            } else {
+                fb.className = "p-2.5 rounded-lg text-[11px] font-semibold bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-200 border border-amber-300 dark:border-amber-800";
+                fb.innerHTML = `<i class="fa-solid fa-triangle-exclamation mr-1 text-amber-600"></i>Plausibler Überschlag, weicht aber noch etwas ab. Passe Höhe (y-Mitelwert) oder Breite (Intervall) an.`;
+            }
+        }
+
+        // CHARTS SETUP
+        function initCharts() {
+            // Plausibility Chart
+            const ctxPlaus = document.getElementById('plausibilityChart').getContext('2d');
+            plausibilityChart = new Chart(ctxPlaus, {
+                type: 'scatter',
+                data: {
+                    datasets: [
+                        { label: 'Original Graph', data: [], showLine: true, borderColor: '#0284c7', borderWidth: 3, backgroundColor: 'transparent', pointRadius: 2 },
+                        { label: 'Ersatz-Rechteck', data: [], showLine: true, borderColor: '#10b981', borderWidth: 2, borderDash: [5,5], backgroundColor: 'rgba(16, 185, 129, 0.2)', fill: true, pointRadius: 0 }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: true, labels: { boxWidth: 12, font: { size: 10 } } } },
+                    scales: {
+                        x: { type: 'linear', position: 'bottom', grid: { color: 'rgba(148, 163, 184, 0.2)' } },
+                        y: { beginAtZero: true, grid: { color: 'rgba(148, 163, 184, 0.2)' } }
+                    }
+                }
+            });
+
+            // Tank Chart
+            const ctxTank = document.getElementById('tankChart').getContext('2d');
+            tankChart = new Chart(ctxTank, {
+                type: 'line',
+                data: {
+                    labels: [0, 1, 2, 3, 4, 5, 6, 7],
+                    datasets: [{
+                        label: 'Durchflussrate f(t) (l/min)',
+                        data: [2, 2, 2, 2, 1, 0, -1.5, -1.5],
+                        borderColor: '#10b981', borderWidth: 3,
+                        fill: { target: 'origin', above: 'rgba(16, 185, 129, 0.2)', below: 'rgba(244, 63, 94, 0.2)' }
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, scales: { y: { min: -2, max: 3 } } }
+            });
+
+            // Elevator Chart
+            const ctxElev = document.getElementById('elevatorChart').getContext('2d');
+            elevatorChart = new Chart(ctxElev, {
+                type: 'line',
+                data: {
+                    labels: [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26],
+                    datasets: [{
+                        label: 'v(t) in m/s',
+                        data: [0, 3, 3, 3, 0, 0, -3, -3, -3, 0, 0, 0, 0, 0],
+                        borderColor: '#0284c7', borderWidth: 3,
+                        fill: { target: 'origin', above: 'rgba(2, 132, 199, 0.2)', below: 'rgba(244, 63, 94, 0.2)' }
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, scales: { y: { min: -4, max: 4 } } }
+            });
+
+            // Ball Chart
+            const ctxBall = document.getElementById('ballChart').getContext('2d');
+            ballChart = new Chart(ctxBall, {
+                type: 'line',
+                data: {
+                    labels: [0, 1, 2, 3, 4, 5, 6],
+                    datasets: [{
+                        label: 'v(t) in cm/s',
+                        data: [-2, -2, -2, 0, 2, 2, 2],
+                        borderColor: '#6366f1', borderWidth: 3,
+                        fill: { target: 'origin', above: 'rgba(16, 185, 129, 0.2)', below: 'rgba(244, 63, 94, 0.2)' }
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, scales: { y: { min: -3, max: 3 } } }
+            });
+
+            // Chem Chart (Chemiefabrik nach Buchseite 54)
+            const ctxChem = document.getElementById('chemChart').getContext('2d');
+            chemChart = new Chart(ctxChem, {
+                type: 'line',
+                data: {
+                    labels: [0, 2, 4, 6, 8, 10, 12],
+                    datasets: [
+                        { label: 'Zuflussrate z(t)', data: [0, 0.5, 1.0, 1.5, 2.0, 2.5, 2.5], borderColor: '#10b981', borderWidth: 3, tension: 0.1 },
+                        { label: 'Abflussrate a(t)', data: [0, 0, 0, 0, 2.5, 2.5, 2.5], borderColor: '#f43f5e', borderWidth: 2, borderDash: [4,4], tension: 0.1 }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: true, labels: { boxWidth: 12, font: { size: 11 } } }
+                    },
+                    scales: {
+                        x: { title: { display: true, text: 'Zeit t in h', font: { size: 10 } } },
+                        y: { min: 0, max: 3.5, title: { display: true, text: 'm³/h', font: { size: 10 } } }
+                    }
+                }
+            });
+        }
+
+        // SIMULATION CONTROLLERS (PLAY / PAUSE / RESET)
+        // 1. TANK
+        function updateTankSimulation(t) {
+            document.getElementById('tank-time-badge').textContent = `t = ${t.toFixed(1)} min`;
+            let area = 0;
+            if (t <= 3) area = 2 * t;
+            else if (t <= 5) area = 6 + 1 * (t - 3);
+            else area = 8 - 1.5 * (t - 5);
+
+            const initial = 15.0;
+            const total = initial + area;
+            document.getElementById('tank-integral-val').textContent = `${area >= 0 ? '+' : ''}${area.toFixed(1)} l`;
+            document.getElementById('tank-integral-val').className = `font-bold block ${area >= 0 ? 'text-emerald-600' : 'text-rose-600'}`;
+            document.getElementById('tank-total-val').textContent = `${total.toFixed(1)} l`;
+            document.getElementById('tank-water-label').textContent = `${total.toFixed(1)} l`;
+            document.getElementById('tank-water').style.height = `${Math.min(100, Math.max(5, (total / 30.0) * 100))}%`;
+        }
+
+        function playTankAnim() {
+            const btnText = document.getElementById('tank-play-text');
+            const btnIcon = document.getElementById('tank-play-icon');
+            const slider = document.getElementById('tank-slider');
+
+            if (tankAnimInterval) {
+                clearInterval(tankAnimInterval); tankAnimInterval = null;
+                btnText.textContent = "Simulation starten"; btnIcon.className = "fa-solid fa-play";
+            } else {
+                if (parseFloat(slider.value) >= 7) slider.value = 0;
+                btnText.textContent = "Pause"; btnIcon.className = "fa-solid fa-pause";
+                tankAnimInterval = setInterval(() => {
+                    let val = parseFloat(slider.value) + 0.1;
+                    if (val > 7) { val = 7; clearInterval(tankAnimInterval); tankAnimInterval = null; btnText.textContent = "Simulation starten"; btnIcon.className = "fa-solid fa-play"; }
+                    slider.value = val; updateTankSimulation(val);
+                }, 100);
+            }
+        }
+        function resetTankAnim() {
+            if(tankAnimInterval) { clearInterval(tankAnimInterval); tankAnimInterval = null; }
+            document.getElementById('tank-play-text').textContent = "Simulation starten";
+            document.getElementById('tank-play-icon').className = "fa-solid fa-play";
+            document.getElementById('tank-slider').value = 0;
+            updateTankSimulation(0);
+        }
+
+        // 2. ELEVATOR
+        function updateElevatorSimulation(t) {
+            document.getElementById('elevator-time-badge').textContent = `t = ${t.toFixed(1)} s`;
+            let speed = 0, height = 0;
+            if (t <= 2) { speed = 1.5 * t; height = 0.5 * 1.5 * t * t; }
+            else if (t <= 6) { speed = 3; height = 3 + 3 * (t - 2); }
+            else if (t <= 8) { speed = 3 - 1.5 * (t - 6); height = 15 + 3 * (t - 6) - 0.5 * 1.5 * Math.pow(t - 6, 2); }
+            else if (t <= 12) { speed = 0; height = 18; }
+            else if (t <= 14) { speed = -1.5 * (t - 12); height = 18 - 0.5 * 1.5 * Math.pow(t - 12, 2); }
+            else if (t <= 18) { speed = -3; height = 15 - 3 * (t - 14); }
+            else if (t <= 20) { speed = -3 + 1.5 * (t - 18); height = 3 - 3 * (t - 18) + 0.5 * 1.5 * Math.pow(t - 18, 2); }
+            else { speed = 0; height = 0; }
+
+            document.getElementById('elev-speed-val').textContent = `${speed.toFixed(1)} m/s`;
+            document.getElementById('elev-pos-val').textContent = `${height >= 0 ? '+' : ''}${height.toFixed(1)} m`;
+            document.getElementById('elevator-height-label').textContent = `${height.toFixed(1)} m`;
+            document.getElementById('elevator-cabin').style.transform = `translateY(-${Math.min(200, Math.max(0, (height / 30.0) * 200))}px)`;
+        }
+
+        function playElevatorAnim() {
+            const btnText = document.getElementById('elev-play-text');
+            const btnIcon = document.getElementById('elev-play-icon');
+            const slider = document.getElementById('elevator-slider');
+
+            if (elevAnimInterval) {
+                clearInterval(elevAnimInterval); elevAnimInterval = null;
+                btnText.textContent = "Simulation starten"; btnIcon.className = "fa-solid fa-play";
+            } else {
+                if (parseFloat(slider.value) >= 26) slider.value = 0;
+                btnText.textContent = "Pause"; btnIcon.className = "fa-solid fa-pause";
+                elevAnimInterval = setInterval(() => {
+                    let val = parseFloat(slider.value) + 0.2;
+                    if (val > 26) { val = 26; clearInterval(elevAnimInterval); elevAnimInterval = null; btnText.textContent = "Simulation starten"; btnIcon.className = "fa-solid fa-play"; }
+                    slider.value = val; updateElevatorSimulation(val);
+                }, 100);
+            }
+        }
+
+        function resetElevatorAnim() {
+            if(elevAnimInterval) { clearInterval(elevAnimInterval); elevAnimInterval = null; }
+            document.getElementById('elev-play-text').textContent = "Simulation starten";
+            document.getElementById('elev-play-icon').className = "fa-solid fa-play";
+            document.getElementById('elevator-slider').value = 0;
+            updateElevatorSimulation(0);
+        }
+
+        // 3. BALL SIMULATION (Beispiel 1 Buchseite 54)
+        function updateBallSimulation(t) {
+            document.getElementById('ball-time-badge').textContent = `t = ${t.toFixed(1)} s`;
+            let speed = 0, pos = 0;
+            if (t <= 3) {
+                speed = -2;
+                pos = -2 * t;
+            } else {
+                speed = 2;
+                pos = -6 + 2 * (t - 3);
+            }
+
+            document.getElementById('ball-speed-val').textContent = `${speed.toFixed(1)} cm/s`;
+            document.getElementById('ball-pos-val').textContent = `${pos.toFixed(1)} cm`;
+            
+            // Map position (-3 cm to +3 cm) to horizontal track offset (-120px to +120px)
+            const pixelOffset = (pos / 3.0) * 110;
+            const ballEl = document.getElementById('rolling-ball');
+            if (ballEl) {
+                ballEl.style.transform = `translateX(${pixelOffset}px)`;
+            }
+        }
+
+        function playBallAnim() {
+            const btnText = document.getElementById('ball-play-text');
+            const btnIcon = document.getElementById('ball-play-icon');
+            const slider = document.getElementById('ball-slider');
+
+            if (ballAnimInterval) {
+                clearInterval(ballAnimInterval); ballAnimInterval = null;
+                btnText.textContent = "Simulation starten"; btnIcon.className = "fa-solid fa-play";
+            } else {
+                if (parseFloat(slider.value) >= 5) slider.value = 0;
+                btnText.textContent = "Pause"; btnIcon.className = "fa-solid fa-pause";
+                ballAnimInterval = setInterval(() => {
+                    let val = parseFloat(slider.value) + 0.05;
+                    if (val > 5) { val = 5; clearInterval(ballAnimInterval); ballAnimInterval = null; btnText.textContent = "Simulation starten"; btnIcon.className = "fa-solid fa-play"; }
+                    slider.value = val; updateBallSimulation(val);
+                }, 100);
+            }
+        }
+
+        function resetBallAnim() {
+            if(ballAnimInterval) { clearInterval(ballAnimInterval); ballAnimInterval = null; }
+            document.getElementById('ball-play-text').textContent = "Simulation starten";
+            document.getElementById('ball-play-icon').className = "fa-solid fa-play";
+            document.getElementById('ball-slider').value = 0;
+            updateBallSimulation(0);
+        }
+
+        // CHEMIEFABRIK SIMULATION LOGIC (Exakt nach Buchseite 54)
+        function updateChemSimulation(t) {
+            document.getElementById('chem-time-badge').textContent = `t = ${t.toFixed(1)} h`;
+            
+            // Zuflussrate z(t): Steigt linear von 0 bis 2.5 bei t=10, bleibt dann bei 2.5
+            let zRate = 0;
+            if (t <= 10) {
+                zRate = (2.5 / 10.0) * t;
+            } else {
+                zRate = 2.5;
+            }
+
+            // Abflussrate a(t): 0 bis t=6, ab t=6 konstant 2.5 m3/h
+            let aRate = t >= 6 ? 2.5 : 0;
+
+            // Volumen im Tank V(t)
+            let vol = 0;
+            if (t <= 6) {
+                vol = 0.5 * t * ((2.5 / 10.0) * t);
+            } else if (t <= 10) {
+                let baseAt6 = 4.5;
+                let integralNetto = 0;
+                let steps = Math.round((t - 6) / 0.1);
+                for(let i=1; i<=steps; i++) {
+                    let ti = 6 + i * 0.1;
+                    let z_i = (2.5 / 10.0) * ti;
+                    let a_i = 2.5;
+                    integralNetto += (z_i - a_i) * 0.1;
+                }
+                vol = baseAt6 + integralNetto;
+            } else {
+                vol = 2.5;
+            }
+
+            document.getElementById('chem-rate-in').textContent = `${zRate.toFixed(1)} m³/h`;
+            document.getElementById('chem-rate-out').textContent = `${aRate.toFixed(1)} m³/h`;
+            document.getElementById('chem-volume-val').textContent = `${vol.toFixed(1)} m³`;
+            document.getElementById('chem-tank-liquid-label').textContent = `${vol.toFixed(1)} m³`;
+
+            const percent = Math.min(100, Math.max(5, (vol / 6.0) * 100));
+            document.getElementById('chem-tank-liquid').style.height = `${percent}%`;
+        }
+
+        function jumpChemPhase(t) {
+            document.getElementById('chem-slider').value = t;
+            updateChemSimulation(t);
+        }
+
+        function playChemAnim() {
+            const btnText = document.getElementById('chem-play-text');
+            const btnIcon = document.getElementById('chem-play-icon');
+            const slider = document.getElementById('chem-slider');
+
+            if (chemAnimInterval) {
+                clearInterval(chemAnimInterval); chemAnimInterval = null;
+                btnText.textContent = "Simulation starten"; btnIcon.className = "fa-solid fa-play";
+            } else {
+                if (parseFloat(slider.value) >= 12) slider.value = 0;
+                btnText.textContent = "Pause"; btnIcon.className = "fa-solid fa-pause";
+                chemAnimInterval = setInterval(() => {
+                    let val = parseFloat(slider.value) + 0.1;
+                    if (val > 12) { val = 12; clearInterval(chemAnimInterval); chemAnimInterval = null; btnText.textContent = "Simulation starten"; btnIcon.className = "fa-solid fa-play"; }
+                    slider.value = val; updateChemSimulation(val);
+                }, 100);
+            }
+        }
+
+        function resetChemAnim() {
+            if(chemAnimInterval) { clearInterval(chemAnimInterval); chemAnimInterval = null; }
+            document.getElementById('chem-play-text').textContent = "Simulation starten";
+            document.getElementById('chem-play-icon').className = "fa-solid fa-play";
+            document.getElementById('chem-slider').value = 0;
+            updateChemSimulation(0);
+        }
+
+        // UNIT MULTIPLIER & CURRENCY CANCELLATION LABORATORY
+        const unitData = {
+            "m3_h": { name: "m³/h", numerator: "m³", denominator: "h", type: "Volumen (Wassermenge)" },
+            "m3_min": { name: "m³/min", numerator: "m³", denominator: "min", type: "Volumen (Fluss / Leitung)" },
+            "km_h": { name: "km/h", numerator: "km", denominator: "h", type: "Strecke / Weg" },
+            "m_s": { name: "m/s", numerator: "m", denominator: "s", type: "Strecke / Weg" },
+            "pers_min": { name: "Personen/min", numerator: "Personen", denominator: "min", type: "Anzahl Personen" },
+            "g_min": { name: "g/min", numerator: "g", denominator: "min", type: "Masse (Schadstoff)" },
+            "N": { name: "N", numerator: "N", denominator: null, type: "Energie / Arbeit (Nm = Joule)" }
+        };
+
+        function runUnitMultiplier() {
+            const yKey = document.getElementById('mult-y-select').value;
+            const xVal = document.getElementById('mult-x-select').value;
+            const yUnit = unitData[yKey];
+
+            const formulaEl = document.getElementById('mult-formula-step');
+            const resultEl = document.getElementById('mult-result-display');
+            const typeEl = document.getElementById('mult-type-badge');
+            const detailEl = document.getElementById('mult-detail-text');
+
+            if (!yUnit.denominator) {
+                const resUnit = `N \\cdot ${xVal}`;
+                formulaEl.innerHTML = `$$\\text{Kraft (N)} \\cdot \\text{Weg (${xVal})} = \\text{Arbeit (${resUnit})}$$`;
+                resultEl.textContent = `N · ${xVal}`;
+                typeEl.textContent = "Physikalische Arbeit / Energie (Nm)";
+                detailEl.innerHTML = `Multiplikation einer veränderlichen Kraft $\\text{N}$ über eine Strecke in $\\text{${xVal}}$ ergibt das Arbeitsintegral in $\\text{${resUnit}}$.`;
+            } else if (yUnit.denominator === xVal) {
+                const resUnit = yUnit.numerator;
+                formulaEl.innerHTML = `$$\\left(\\frac{\\text{${yUnit.numerator}}}{\\cancel{\\text{${yUnit.denominator}}}}\\right) \\cdot \\cancel{\\text{${xVal}}} = \\text{${resUnit}}$$`;
+                resultEl.textContent = resUnit;
+                typeEl.textContent = `Rekonstruierte Größe: ${yUnit.type}`;
+                detailEl.innerHTML = `Die Zeiteinheit $\\text{${xVal}}$ der x-Achse kürzt sich vollständig gegen den Nenner der Änderungsrate. Der Flächeninhalt entspricht exakt dem Gesamtwert in $\\text{${resUnit}}$.`;
+            } else {
+                formulaEl.innerHTML = `$$\\left(\\frac{\\text{${yUnit.numerator}}}{\\text{${yUnit.denominator}}}\\right) \\cdot \\text{${xVal}} = \\text{${yUnit.numerator}} / \\text{${yUnit.denominator}} \\cdot \\text{${xVal}}$$`;
+                resultEl.textContent = `${yUnit.numerator} (nach Umrechnung)`;
+                typeEl.textContent = `Rekonstruierte Größe: ${yUnit.type}`;
+                detailEl.innerHTML = `Hinweis: Die Einheiten $\\text{${yUnit.denominator}}$ und $\\text{${xVal}}$ müssen vor der Flächenberechnung in dieselbe Zeiteinheit umgerechnet werden (z. B. Minuten in Stunden), damit sich die Einheiten sauber kürzen.`;
+            }
+
+            if (window.renderMathInElement) {
+                renderMathInElement(formulaEl, {
+                    delimiters: [
+                        {left: '$$', right: '$$', display: true},
+                        {left: '$', right: '$', display: false}
+                    ]
+                });
+                renderMathInElement(detailEl, {
+                    delimiters: [
+                        {left: '$$', right: '$$', display: true},
+                        {left: '$', right: '$', display: false}
+                    ]
+                });
+            }
+        }
+
+        // QUIZ LOGIC
+        const quizQuestions = [
+            {
+                q: "Was beschreibt der orientierte Flächeninhalt unter einem Geschwindigkeits-Zeit-Graphen v(t)?",
+                opts: ["Die Momentanbeschleunigung", "Die zurückgelegte Strecke bzw. die Positionsänderung", "Den absoluten Kraftaufwand", "Den Kraftstoffverbrauch"],
+                ans: 1,
+                exp: "Die Rekonstruktion einer Größe aus ihrer Änderungsrate $v(t)$ über die Zeit $t$ ergibt die Strecke $\\Delta s = \\int v(t)\\,\\mathrm{d}t$."
+            },
+            {
+                q: "Ein Wassertank hat einen Anfangsbestand von 15 Litern. Der orientierte Flächeninhalt zwischen f(t) und der t-Achse beträgt -3 Liter. Wie viel Wasser ist im Tank?",
+                opts: ["18 Liter", "15 Liter", "12 Liter", "3 Liter"],
+                ans: 2,
+                exp: "Endbestand = Anfangsbestand + orientierter Flächeninhalt = $15\\,\\text{l} + (-3\\,\\text{l}) = 12\\,\\text{l}$."
+            },
+            {
+                q: "Warum werden Flächen unterhalb der x-Achse negativ gezählt?",
+                opts: ["Weil Flächeninhalte in der Geometrie immer negativ sein müssen", "Weil Werte von f(t) < 0 eine Abnahme oder Bewegung in entgegengesetzte Richtung darstellen", "Weil der Graph dort nicht definiert ist", "Aus rein optischen Gründen"],
+                ans: 1,
+                exp: "Bei $f(t) < 0$ sinkt der Bestand (z. B. Abfluss aus dem Tank oder Rückwärtsbewegung einer Kugel)."
+            }
+        ];
+
+        let userAnswers = {};
+
+        function renderQuiz() {
+            const container = document.getElementById('quiz-container');
+            container.innerHTML = '';
+
+            quizQuestions.forEach((item, idx) => {
+                const qBox = document.createElement('div');
+                qBox.className = "p-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-3 text-xs";
+                
+                let optionsHTML = '';
+                item.opts.forEach((opt, optIdx) => {
+                    optionsHTML += `
+                        <label class="flex items-center space-x-2.5 p-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800/60 transition">
+                            <input type="radio" name="quiz-q-${idx}" value="${optIdx}" onchange="selectQuizOption(${idx}, ${optIdx})" class="accent-sky-600">
+                            <span class="text-slate-700 dark:text-slate-300 font-medium">${opt}</span>
+                        </label>
+                    `;
+                });
+
+                qBox.innerHTML = `
+                    <div class="font-bold text-slate-900 dark:text-white flex items-start space-x-2">
+                        <span class="px-2 py-0.5 rounded bg-sky-100 dark:bg-sky-950 text-sky-700 dark:text-sky-300 font-mono text-[11px]">Frage ${idx + 1}</span>
+                        <span>${item.q}</span>
+                    </div>
+                    <div class="space-y-1.5">${optionsHTML}</div>
+                    <div id="quiz-exp-${idx}" class="hidden p-2.5 rounded-lg text-[11px] leading-relaxed"></div>
+                `;
+
+                container.appendChild(qBox);
+            });
+        }
+
+        function selectQuizOption(qIdx, optIdx) {
+            userAnswers[qIdx] = optIdx;
+            const item = quizQuestions[qIdx];
+            const expEl = document.getElementById(`quiz-exp-${qIdx}`);
+            expEl.classList.remove('hidden');
+
+            if (optIdx === item.ans) {
+                expEl.className = "p-2.5 rounded-lg text-[11px] leading-relaxed bg-emerald-100 dark:bg-emerald-950 text-emerald-900 dark:text-emerald-200 border border-emerald-300 dark:border-emerald-800";
+                expEl.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-600 mr-1"></i><strong>Richtig!</strong> ${item.exp}`;
+            } else {
+                expEl.className = "p-2.5 rounded-lg text-[11px] leading-relaxed bg-rose-100 dark:bg-rose-950 text-rose-900 dark:text-rose-200 border border-rose-300 dark:border-rose-800";
+                expEl.innerHTML = `<i class="fa-solid fa-circle-xmark text-rose-600 mr-1"></i><strong>Leider falsch.</strong> ${item.exp}`;
+            }
+
+            let correctCount = 0;
+            Object.keys(userAnswers).forEach(key => {
+                if (userAnswers[key] === quizQuestions[key].ans) correctCount++;
+            });
+            document.getElementById('quiz-score-badge').textContent = `Score: ${correctCount} / ${quizQuestions.length}`;
+
+            if (window.renderMathInElement) {
+                renderMathInElement(expEl, {
+                    delimiters: [
+                        {left: '$$', right: '$$', display: true},
+                        {left: '$', right: '$', display: false}
+                    ]
+                });
+            }
+        }
+    </script>
+</body>
+</html>
